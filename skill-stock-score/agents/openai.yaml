@@ -1,7 +1,0 @@
-interface:
-  display_name: "A-share Fundamental Score"
-  short_description: "Score A-share fundamentals across five dimensions"
-  default_prompt: "Use $skill-stock-score to score an A-share stock or rank an industry sector."
-
-policy:
-  allow_implicit_invocation: true
