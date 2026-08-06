@@ -1,0 +1,10 @@
+---
+description: Use skill-stock-score for A-share fundamental scoring and industry ranking.
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+# skill-stock-score
+
+For A-share stock or sector scoring requests, follow the workflow and five-dimension rules in the repository root `SKILL.md`. Use `skill-pandadata-api` when available, cite data dates and sources, disclose missing data, and include a non-advisory risk disclaimer.
