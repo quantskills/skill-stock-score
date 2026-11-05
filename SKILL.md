@@ -354,3 +354,7 @@ get_index_indicator(index_code)                 # 行业指数估值指标
 - `skill-pandadata-api`：所有实时数据均通过此技能从PandaData接口获取
 - 调用API前，先打开 `skill-pandadata-api` 的 `references/api-docs.md` 确认参数
 - 调用时使用 `python scripts/call_api.py --method <method_name> --params '{"key":"value"}'`
+
+## Pandadata compatibility
+
+[Pandadata 1.0.6 compatibility](references/pandadata-compatibility.md) — exact SDK baseline, validation scope, and shared guidance for all supported agent runtimes.

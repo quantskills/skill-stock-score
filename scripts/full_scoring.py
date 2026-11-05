@@ -310,7 +310,7 @@ def score_news(sym):
 
     # 2.2 机构调研 (4分)
     try:
-        inv = panda_data.get_investor_activity(symbol=sym, fields=[])
+        inv = panda_data.get_investor_activity(symbol=sym, fields=[], start_date="20250706", end_date="20260706")
         if inv is not None and len(inv) > 0:
             recent = inv[inv["date"] >= "20260401"] if "date" in inv.columns else inv.tail(3)
             count = len(recent) if len(recent) > 0 else 1
@@ -414,23 +414,11 @@ def score_debt(sym, fina_df):
         total += cr_score
         details["流动/速动比率"] = {"得分": cr_score, "说明": cr_desc}
 
-        # 4.3 质押 (3分) - 中性处理
-        try:
-            pledge = panda_data.get_stock_pledge_stat(symbol=sym, fields=[])
-            if pledge is not None and len(pledge) > 0:
-                pr = float(pledge.iloc[-1].get("pledge_ratio", 0) or 0)
-            else:
-                pr = 0
-        except:
-            pr = 0
-
-        if pr < 0.10: pl_score = 3; pl_desc = f"低质押({pr*100:.1f}%)"
-        elif pr < 0.30: pl_score = 2; pl_desc = f"中等质押({pr*100:.1f}%)"
-        elif pr < 0.50: pl_score = 1; pl_desc = f"偏高质押({pr*100:.1f}%)"
-        else: pl_score = 0; pl_desc = f"高质押({pr*100:.1f}%)"
-
-        total += pl_score
-        details["股权质押"] = {"得分": pl_score, "说明": pl_desc}
+        # The SDK statistic is market-wide and has no company pledge_ratio.
+        # Leave this component explicitly unscored; never treat failure as zero risk.
+        pl_score = 0
+        pl_desc = "未评分：缺少公司级质押统计，当前总分仅为已评分部分"
+        details["股权质押"] = {"得分": pl_score, "说明": pl_desc, "状态": "missing"}
 
         # 4.4 有息负债率 (3分)
         int_debt = (st_borr + lt_borr) / ta if ta > 0 else 0
@@ -457,7 +445,7 @@ def score_shareholder(sym):
 
     # 5.1 大股东增减持 (6分)
     try:
-        sh = panda_data.get_stock_shareholder_change(symbol=sym, fields=[])
+        sh = panda_data.get_stock_shareholder_change(symbol=sym, fields=[], start_date="20250706", end_date="20260706")
         if sh is not None and len(sh) > 0:
             plans = sh["plan_type"].tolist() if "plan_type" in sh.columns else []
             inc = sum(1 for p in plans if "增" in str(p))
@@ -484,7 +472,7 @@ def score_shareholder(sym):
 
     # 5.3 回购 (3分)
     try:
-        rep = panda_data.get_repurchase(symbol=sym, fields=[])
+        rep = panda_data.get_repurchase(symbol=sym, fields=[], start_date="20250706", end_date="20260706")
         if rep is not None and len(rep) > 0:
             latest = rep.iloc[-1]
             amount = float(latest.get("repo_amount", 0) or 0)
@@ -504,7 +492,7 @@ def score_shareholder(sym):
 
     # 5.4 限售解禁 (3分)
     try:
-        rest = panda_data.get_restricted_list(symbol=sym, fields=[])
+        rest = panda_data.get_restricted_list(symbol=sym, fields=[], start_date="20250706", end_date="20260706")
         if rest is not None and len(rest) > 0:
             dates = rest["list_date"].tolist() if "list_date" in rest.columns else []
             future = [d for d in dates if str(d) > "20260706"]
@@ -567,6 +555,7 @@ for i, s in enumerate(top50):
     else: grade = "C"; stars = "★"
 
     results.append({
+        "data_complete": False, "unscored_dimensions": ["股权质押"],
         "rank": i + 1,
         "symbol": sym,
         "name": name,
@@ -587,6 +576,8 @@ for i, s in enumerate(top50):
 
     print(f"    ⭐ 总分: {total_score:.1f}/100 → {stars} {grade}")
     print()
+
+print("注意：以下为部分评分，股权质押维度未评分，不能视为完整评级。")
 
 # ========== 6. 按总分排序并输出TOP10 ==========
 results.sort(key=lambda x: x["total"], reverse=True)

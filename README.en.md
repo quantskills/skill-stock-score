@@ -22,3 +22,6 @@ This skill covers Shanghai, Shenzhen, and Beijing A-shares only. Scores are rese
 ## License
 
 This project is licensed under GPL-3.0-only. See [LICENSE](LICENSE).
+
+
+Pandadata compatibility maintenance: [abgyjaguo](https://github.com/abgyjaguo). Existing authorship is retained.
