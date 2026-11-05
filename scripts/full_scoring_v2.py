@@ -224,20 +224,9 @@ def score_debt(sym):
     else: s=0; d=f"差(流动{cr:.2f}/速动{qr:.2f})"
     score += s; parts["流动/速动比率"] = (s, d)
 
-    # 4.3 质押 3分
-    try:
-        pl = panda_data.get_stock_pledge_stat(symbol=sym, fields=[])
-        if pl is not None and len(pl) > 0:
-            pr = float(pl.iloc[-1].get("pledge_ratio", 0) or 0)
-        else:
-            pr = 0
-    except: pr = 0
-
-    if pr < 0.10: s=3; d=f"低质押({pr*100:.1f}%)"
-    elif pr < 0.30: s=2; d=f"中等({pr*100:.1f}%)"
-    elif pr < 0.50: s=1; d=f"较高({pr*100:.1f}%)"
-    else: s=0; d=f"极高({pr*100:.1f}%)"
-    score += s; parts["股权质押"] = (s, d)
+    # Market-wide pledge statistics cannot provide an individual issuer ratio.
+    s = 0; d = "未评分：缺少公司级质押统计，当前总分仅为已评分部分"
+    parts["股权质押"] = (s, d)
 
     # 4.4 有息负债率 3分
     idr = (stb + ltb) / ta
@@ -286,7 +275,7 @@ def score_sh(sym):
 
     # 5.1 大股东增减持 6分
     try:
-        sh = panda_data.get_stock_shareholder_change(symbol=sym, fields=[])
+        sh = panda_data.get_stock_shareholder_change(symbol=sym, fields=[], start_date="20250706", end_date="20260706")
         if sh is not None and len(sh) > 0:
             pts = sh["plan_type"].tolist() if "plan_type" in sh.columns else []
             inc = sum(1 for p in pts if "增" in str(p))
@@ -306,7 +295,7 @@ def score_sh(sym):
 
     # 5.3 回购 3分
     try:
-        rp = panda_data.get_repurchase(symbol=sym, fields=[])
+        rp = panda_data.get_repurchase(symbol=sym, fields=[], start_date="20250706", end_date="20260706")
         if rp is not None and len(rp) > 0:
             amt = float(rp.iloc[-1].get("repo_amount", 0) or 0)
             if amt > 5e8: s=3; d=f"大额回购({amt/1e8:.1f}亿)"
@@ -319,7 +308,7 @@ def score_sh(sym):
 
     # 5.4 解禁 3分
     try:
-        rt = panda_data.get_restricted_list(symbol=sym, fields=[])
+        rt = panda_data.get_restricted_list(symbol=sym, fields=[], start_date="20250706", end_date="20260706")
         if rt is not None and len(rt) > 0:
             future = [r for _, r in rt.iterrows() if str(r.get("list_date","")) > "20260706"]
             if len(future) == 0: s=3; d="未来无解禁"
@@ -356,6 +345,7 @@ for i, sym in enumerate(SYMBOLS):
     else: grade, stars = "C", "★"
 
     results.append({
+        "data_complete": False, "unscored_dimensions": ["股权质押"],
         "rank": i+1, "symbol": sym, "name": name, "mcap": mcap,
         "finance": round(fs, 1), "news": round(ns, 1),
         "industry": round(inds, 1), "debt": round(ds, 1),
@@ -365,6 +355,8 @@ for i, sym in enumerate(SYMBOLS):
     })
 
     print(f"  [{i+1}/50] {name:<8s} {sym:>10s} 财务{fs:>5.1f} 债务{ds:>5.1f} 增减持{ss:>5.1f} → {total:>5.1f}点 {stars}")
+
+print("注意：以下为部分评分，股权质押维度未评分，不能视为完整评级。")
 
 # ========== 6. 排序 ==========
 results.sort(key=lambda x: x["total"], reverse=True)
